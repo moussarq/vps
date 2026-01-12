@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم VPS مجانية</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        /* شريط التحميل */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* صفحة تسجيل الدخول */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .login-container h2 {
+            color: var(--primary);
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: 500;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: var(--secondary);
+        }
+
+        /* الصفحة الرئيسية */
+        .dashboard {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: white;
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100vh;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.1);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f1f5f9;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-header h3 {
+            color: var(--primary);
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            color: var(--dark);
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: #f1f5f9;
+            color: var(--primary);
+        }
+
+        .nav-item i {
+            margin-left: 10px;
+            font-size: 20px;
+        }
+
+        .main-content {
+            margin-right: 250px;
+            padding: 30px;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--primary);
+            cursor: pointer;
+        }
+
+        /* بطاقات السيرفرات */
+        .servers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .server-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .server-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .server-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
+        .status-online { background: var(--success); }
+        .status-offline { background: var(--danger); }
+
+        .server-stats {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .server-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.3s;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-start { background: var(--success); color: white; }
+        .btn-stop { background: var(--danger); color: white; }
+        .btn-manage { background: var(--primary); color: white; }
+
+        /* صفحة إنشاء سيرفر */
+        .create-server {
+            max-width: 600px;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 0 auto;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 0;
+            left: 0;
+            height: 2px;
+            background: #e2e8f0;
+            z-index: 1;
+        }
+
+        .step {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+        }
+
+        .step.active .step-number {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* نموذج إنشاء سيرفر */
+        .form-step {
+            display: none;
+        }
+
+        .form-step.active {
+            display: block;
+        }
+
+        .egg-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .egg-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .egg-card:hover {
+            border-color: var(--primary);
+            background: white;
+        }
+
+        .egg-card.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .egg-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .slider-container {
+            margin: 20px 0;
+        }
+
+        .slider-value {
+            font-weight: bold;
+            color: var(--primary);
+            margin-left: 10px;
+        }
+
+        /* التوافق مع الجوال */
+        @media (max-width: 768px) {
+            .sidebar {
+                right: -250px;
+                transition: right 0.3s;
+            }
+            
+            .sidebar.active {
+                right: 0;
+            }
+            
+            .main-content {
+                margin-right: 0;
+            }
+            
+            .menu-toggle {
+                display: block;
+            }
+        }
+    </style>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- شريط التحميل -->
+    <div class="loader" id="loader">
+        <div style="text-align: center;">
+            <div style="font-size: 50px; color: #2563eb; margin-bottom: 20px;">
+                <i class="fas fa-server"></i>
+            </div>
+            <h2 style="color: #2563eb;">جاري تحميل لوحة التحكم...</h2>
+            <p style="color: #64748b; margin-top: 10px;">VPS Management Panel</p>
+        </div>
+    </div>
+
+    <!-- صفحة تسجيل الدخول -->
+    <div id="loginPage" class="login-container">
+        <h2><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</h2>
+        
+        <div class="input-group">
+            <label for="username"><i class="fas fa-user"></i> اسم المستخدم</label>
+            <input type="text" id="username" placeholder="أدخل اسم المستخدم" value="admin">
+        </div>
+        
+        <div class="input-group">
+            <label for="password"><i class="fas fa-lock"></i> كلمة المرور</label>
+            <input type="password" id="password" placeholder="أدخل كلمة المرور" value="admin123">
+        </div>
+        
+        <div class="input-group">
+            <label for="pterodactylUrl"><i class="fas fa-link"></i> رابط Pterodactyl</label>
+            <input type="text" id="pterodactylUrl" placeholder="https://pterodactyl.example.com" value="https://panel.your-server.com">
+        </div>
+        
+        <div class="input-group">
+            <label for="apiKey"><i class="fas fa-key"></i> مفتاح API</label>
+            <input type="text" id="apiKey" placeholder="ptlc_xxxxxxxxxxxxxxxxxxxx">
+        </div>
+        
+        <button class="btn" onclick="login()">
+            <i class="fas fa-sign-in-alt"></i> دخول إلى لوحة التحكم
+        </button>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 10px; text-align: right;">
+            <h4 style="color: #0369a1; margin-bottom: 10px;"><i class="fas fa-info-circle"></i> معلومات التثبيت</h4>
+            <p style="color: #64748b; font-size: 14px;">
+                1. ثبت Pterodactyl على سيرفرك<br>
+                2. أدخل رابط Pterodactyl و API Key<br>
+                3. استخدم admin/admin123 للدخول<br>
+                4. ابدأ في إنشاء السيرفرات!
+            </p>
+        </div>
+    </div>
+
+    <!-- الصفحة الرئيسية -->
+    <div id="dashboard" class="dashboard">
+        <!-- القائمة الجانبية -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-server"></i> لوحة VPS</h3>
+                <p style="color: #64748b; font-size: 14px;">الإصدار 1.0</p>
+            </div>
+            
+            <a href="#" class="nav-item active" onclick="showPage('home')">
+                <i class="fas fa-home"></i>
+                <span>الصفحة الرئيسية</span>
+            </a>
+            
+            <a href="#" class="nav-item" onclick="showPage('createServer')">
+                <i class="fas fa-plus-circle"></i>
+                <span>إنشاء سيرفر</span>
+            </a>
+            
+            <a href="#" class="nav-item" onclick="showPage('servers')">
+                <i class="fas fa-server"></i>
+                <span>السيرفرات</span>
+            </a>
+            
+            <a href="#" class="nav-item" onclick="showPage('files')">
+                <i class="fas fa-folder"></i>
+                <span>إدارة الملفات</span>
+            </a>
+            
+            <a href="#" class="nav-item" onclick="showPage('users')">
+                <i class="fas fa-users"></i>
+                <span>المستخدمين</span>
+            </a>
+            
+            <a href="#" class="nav-item" onclick="showPage('settings')">
+                <i class="fas fa-cog"></i>
+                <span>الإعدادات</span>
+            </a>
+            
+            <div style="margin-top: 50px; padding-top: 20px; border-top: 2px solid #f1f5f9;">
+                <a href="#" class="nav-item" onclick="showPage('help')">
+                    <i class="fas fa-question-circle"></i>
+                    <span>مساعدة</span>
+                </a>
+                
+                <a href="#" class="nav-item" onclick="logout()" style="color: #ef4444;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>تسجيل الخروج</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- المحتوى الرئيسي -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <h1 id="pageTitle">السيرفرات الخاصة بي</h1>
+                
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="background: #dbeafe; padding: 8px 15px; border-radius: 20px;">
+                        <i class="fas fa-user" style="color: #2563eb;"></i>
+                        <span id="userName" style="margin-right: 8px; color: #2563eb;">المستخدم</span>
+                    </div>
+                    <button class="btn" onclick="showPage('createServer')" style="width: auto; padding: 10px 20px;">
+                        <i class="fas fa-plus"></i> سيرفر جديد
+                    </button>
+                </div>
+            </div>
+
+            <!-- الصفحات -->
+            <div id="pages">
+                <!-- صفحة الرئيسية -->
+                <div id="homePage" class="page active">
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div style="font-size: 80px; color: #2563eb; margin-bottom: 20px;">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <h2 style="color: #1e293b; margin-bottom: 10px;">مرحباً بك في لوحة تحكم VPS</h2>
+                        <p style="color: #64748b; max-width: 600px; margin: 0 auto 30px;">
+                            من هنا يمكنك إدارة سيرفراتك وإنشاء سيرفرات جديدة وإدارة الملفات والمستخدمين
+                        </p>
+                        
+                        <div style="display: flex; gap: 20px; justify-content: center; margin-top: 40px;">
+                            <div style="background: white; padding: 20px; border-radius: 15px; width: 200px; text-align: center;">
+                                <div style="font-size: 40px; color: #10b981;">
+                                    <i class="fas fa-plus-circle"></i>
+                                </div>
+                                <h4 style="margin: 10px 0;">إنشاء سيرفر</h4>
+                                <p style="color: #64748b; font-size: 14px;">أنشئ سيرفر Minecraft أو Discord Bot</p>
+                            </div>
+                            
+                            <div style="background: white; padding: 20px; border-radius: 15px; width: 200px; text-align: center;">
+                                <div style="font-size: 40px; color: #8b5cf6;">
+                                    <i class="fas fa-cogs"></i>
+                                </div>
+                                <h4 style="margin: 10px 0;">إدارة متقدمة</h4>
+                                <p style="color: #64748b; font-size: 14px;">تحكم كامل في السيرفرات</p>
+                            </div>
+                            
+                            <div style="background: white; padding: 20px; border-radius: 15px; width: 200px; text-align: center;">
+                                <div style="font-size: 40px; color: #f59e0b;">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h4 style="margin: 10px 0;">إدارة المستخدمين</h4>
+                                <p style="color: #64748b; font-size: 14px;">أضف مستخدمين للسيرفرات</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- صفحة إنشاء سيرفر -->
+                <div id="createServerPage" class="page">
+                    <div class="create-server">
+                        <h2 style="color: #1e293b; margin-bottom: 30px;">
+                            <i class="fas fa-plus-circle"></i> إنشاء سيرفر جديد
+                        </h2>
+                        
+                        <!-- خطوات الإنشاء -->
+                        <div class="step-indicator">
+                            <div class="step active" data-step="1">
+                                <div class="step-number">1</div>
+                                <div style="font-size: 14px;">المعلومات الأساسية</div>
+                            </div>
+                            <div class="step" data-step="2">
+                                <div class="step-number">2</div>
+                                <div style="font-size: 14px;">اختيار النوع</div>
+                            </div>
+                            <div class="step" data-step="3">
+                                <div class="step-number">3</div>
+                                <div style="font-size: 14px;">المصادر</div>
+                            </div>
+                            <div class="step" data-step="4">
+                                <div class="step-number">4</div>
+                                <div style="font-size: 14px;">التأكيد</div>
+                            </div>
+                        </div>
+                        
+                        <!-- الخطوة 1: المعلومات الأساسية -->
+                        <div id="step1" class="form-step active">
+                            <h3 style="color: #1e293b; margin-bottom: 20px;">معلومات السيرفر</h3>
+                            
+                            <div class="input-group">
+                                <label for="serverName"><i class="fas fa-server"></i> اسم السيرفر</label>
+                                <input type="text" id="serverName" placeholder="مثلاً: سيرفر Minecraft الأول" value="سيرفر Minecraft الجديد">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="serverDescription"><i class="fas fa-file-alt"></i> الوصف</label>
+                                <textarea id="serverDescription" rows="3" placeholder="وصف مختصر للسيرفر..." style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px;">سيرفر ألعاب جديد</textarea>
+                            </div>
+                            
+                            <div style="display: flex; gap: 20px; margin-top: 30px;">
+                                <button class="btn" onclick="nextStep()" style="background: #10b981;">
+                                    التالي <i class="fas fa-arrow-left"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- الخطوة 2: اختيار النوع -->
+                        <div id="step2" class="form-step">
+                            <h3 style="color: #1e293b; margin-bottom: 20px;">اختر نوع السيرفر</h3>
+                            
+                            <div class="egg-grid">
+                                <div class="egg-card" onclick="selectEgg('minecraft')">
+                                    <div class="egg-icon">
+                                        <i class="fas fa-cube" style="color: #10b981;"></i>
+                                    </div>
+                                    <h4>Minecraft</h4>
+                                    <p style="color: #64748b; font-size: 12px;">سيرفر ألعاب</p>
+                                </div>
+                                
+                                <div class="egg-card" onclick="selectEgg('samp')">
+                                    <div class="egg-icon">
+                                        <i class="fas fa-car" style="color: #8b5cf6;"></i>
+                                    </div>
+                                    <h4>SAMP</h4>
+                                    <p style="color: #64748b; font-size: 12px;">سيرفر GTA</p>
+                                </div>
+                                
+                                <div class="egg-card" onclick="selectEgg('discord')">
+                                    <div class="egg-icon">
+                                        <i class="fab fa-discord" style="color: #7289da;"></i>
+                                    </div>
+                                    <h4>Discord Bot</h4>
+                                    <p style="color: #64748b; font-size: 12px;">بوت Discord</p>
+                                </div>
+                                
+                                <div class="egg-card" onclick="selectEgg('fivem')">
+                                    <div class="egg-icon">
+                                        <i class="fas fa-gamepad" style="color: #f59e0b;"></i>
+                                    </div>
+                                    <h4>FiveM</h4>
+                                    <p style="color: #64748b; font-size: 12px;">سيرفر GTA V</p>
+                                </div>
+                            </div>
+                            
+                            <input type="hidden" id="selectedEgg" value="minecraft">
+                            
+                            <div style="display: flex; gap: 20px; margin-top: 30px;">
+                                <button class="btn" onclick="prevStep()" style="background: #64748b;">
+                                    <i class="fas fa-arrow-right"></i> السابق
+                                </button>
+                                <button class="btn" onclick="nextStep()" style="background: #10b981;">
+                                    التالي <i class="fas fa-arrow-left"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- الخطوة 3: المصادر -->
+                        <div id="step3" class="form-step">
+                            <h3 style="color: #1e293b; margin-bottom: 20px;">تخصيص المصادر</h3>
+                            
+                            <div class="input-group">
+                                <label for="memory">الذاكرة (RAM)</label>
+                                <div style="display: flex; align-items: center;">
+                                    <input type="range" id="memory" min="512" max="16384" step="512" value="2048" style="flex: 1;">
+                                    <span class="slider-value" id="memoryValue">2048 MB</span>
+                                </div>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="disk">التخزين (Disk)</label>
+                                <div style="display: flex; align-items: center;">
+                                    <input type="range" id="disk" min="1024" max="65536" step="1024" value="10240" style="flex: 1;">
+                                    <span class="slider-value" id="diskValue">10240 MB</span>
+                                </div>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="cpu">المعالج (CPU)</label>
+                                <div style="display: flex; align-items: center;">
+                                    <input type="range" id="cpu" min="10" max="100" step="10" value="50" style="flex: 1;">
+                                    <span class="slider-value" id="cpuValue">50%</span>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 20px; margin-top: 30px;">
+                                <button class="btn" onclick="prevStep()" style="background: #64748b;">
+                                    <i class="fas fa-arrow-right"></i> السابق
+                                </button>
+                                <button class="btn" onclick="nextStep()" style="background: #10b981;">
+                                    التالي <i class="fas fa-arrow-left"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- الخطوة 4: التأكيد -->
+                        <div id="step4" class="form-step">
+                            <h3 style="color: #1e293b; margin-bottom: 20px;">تأكيد المعلومات</h3>
+                            
+                            <div style="background: #f8fafc; padding: 20px; border-radius: 15px; margin-bottom: 30px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                    <span style="color: #64748b;">اسم السيرفر:</span>
+                                    <span id="confirmName" style="font-weight: bold;"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                    <span style="color: #64748b;">نوع السيرفر:</span>
+                                    <span id="confirmType" style="font-weight: bold;"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                    <span style="color: #64748b;">الذاكرة:</span>
+                                    <span id="confirmMemory" style="font-weight: bold;"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                    <span style="color: #64748b;">التخزين:</span>
+                                    <span id="confirmDisk" style="font-weight: bold;"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: #64748b;">المعالج:</span>
+                                    <span id="confirmCPU" style="font-weight: bold;"></span>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 20px;">
+                                <button class="btn" onclick="prevStep()" style="background: #64748b;">
+                                    <i class="fas fa-arrow-right"></i> السابق
+                                </button>
+                                <button class="btn" onclick="createServer()" style="background: #10b981;">
+                                    <i class="fas fa-check"></i> إنشاء السيرفر
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- نتيجة الإنشاء -->
+                        <div id="creationResult" style="display: none; text-align: center; padding: 30px;">
+                            <div style="font-size: 60px; color: #10b981; margin-bottom: 20px;">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h3 style="color: #1e293b;">تم إنشاء السيرفر بنجاح!</h3>
+                            <p style="color: #64748b; margin: 20px 0;">
+                                تم إنشاء السيرفر <span id="createdServerName" style="font-weight: bold;"></span> بنجاح.
+                                يمكنك الآن إدارته من صفحة السيرفرات.
+                            </p>
+                            <button class="btn" onclick="showPage('servers')" style="background: #2563eb;">
+                                <i class="fas fa-server"></i> الذهاب إلى السيرفرات
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- صفحة السيرفرات -->
+                <div id="serversPage" class="page">
+                    <h2 style="color: #1e293b; margin-bottom: 20px;">
+                        <i class="fas fa-server"></i> السيرفرات الخاصة بي
+                    </h2>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            <button class="btn" onclick="refreshServers()" style="width: auto; padding: 10px 15px;">
+                                <i class="fas fa-sync-alt"></i> تحديث
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="servers-grid" id="serversList">
+                        <!-- السيرفرات ستظهر هنا -->
+                        <div style="text-align: center; padding: 50px; color: #64748b;">
+                            <div style="font-size: 60px; margin-bottom: 20px;">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <h3>لا توجد سيرفرات</h3>
+                            <p>قم بإنشاء سيرفرك الأول</p>
+                            <button class="btn" onclick="showPage('createServer')" style="width: auto; padding: 10px 30px; margin-top: 20px;">
+                                إنشاء سيرفر
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- صفحات أخرى -->
+                <div id="filesPage" class="page">
+                    <h2 style="color: #1e293b;"><i class="fas fa-folder"></i> إدارة الملفات</h2>
+                    <p style="color: #64748b; margin-top: 20px;">هذه الصفحة تحت التطوير...</p>
+                </div>
+                
+                <div id="usersPage" class="page">
+                    <h2 style="color: #1e293b;"><i class="fas fa-users"></i> إدارة المستخدمين</h2>
+                    <p style="color: #64748b; margin-top: 20px;">هذه الصفحة تحت التطوير...</p>
+                </div>
+                
+                <div id="settingsPage" class="page">
+                    <h2 style="color: #1e293b;"><i class="fas fa-cog"></i> الإعدادات</h2>
+                    <p style="color: #64748b; margin-top: 20px;">هذه الصفحة تحت التطوير...</p>
+                </div>
+                
+                <div id="helpPage" class="page">
+                    <h2 style="color: #1e293b;"><i class="fas fa-question-circle"></i> المساعدة</h2>
+                    <p style="color: #64748b; margin-top: 20px;">هذه الصفحة تحت التطوير...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تخزين البيانات (بديل لقاعدة البيانات) -->
+    <script>
+        // قاعدة بيانات محلية (LocalStorage)
+        let vpsDatabase = {
+            users: [],
+            servers: [],
+            settings: {}
+        };
+
+        // تحميل البيانات المحفوظة
+        function loadDatabase() {
+            const saved = localStorage.getItem('vpsDatabase');
+            if (saved) {
+                vpsDatabase = JSON.parse(saved);
+            }
+            
+            // بيانات افتراضية للمستخدمين
+            if (vpsDatabase.users.length === 0) {
+                vpsDatabase.users = [
+                    { id: 1, username: 'admin', password: 'admin123', email: 'admin@example.com' }
+                ];
+            }
+            
+            // سيرفرات افتراضية للعرض
+            if (vpsDatabase.servers.length === 0) {
+                vpsDatabase.servers = [
+                    {
+                        id: 1,
+                        name: 'سيرفر Minecraft الرئيسي',
+                        type: 'minecraft',
+                        status: 'online',
+                        memory: 4096,
+                        disk: 20480,
+                        cpu: 70,
+                        created: '2024-01-01'
+                    },
+                    {
+                        id: 2,
+                        name: 'سيرفر Discord Bot',
+                        type: 'discord',
+                        status: 'offline',
+                        memory: 1024,
+                        disk: 5120,
+                        cpu: 30,
+                        created: '2024-01-02'
+                    }
+                ];
+            }
+            
+            saveDatabase();
+        }
+
+        // حفظ البيانات
+        function saveDatabase() {
+            localStorage.setItem('vpsDatabase', JSON.stringify(vpsDatabase));
+        }
+
+        // المتغيرات العامة
+        let currentUser = null;
+        let currentStep = 1;
+
+        // عند تحميل الصفحة
+        window.onload = function() {
+            loadDatabase();
+            
+            // إخفاء شريط التحميل بعد ثانيتين
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 2000);
+            
+            // إعداد المتغيرات
+            setupSliders();
+            updateConfirmInfo();
+        };
+
+        // إعداد السلايدرز
+        function setupSliders() {
+            const memorySlider = document.getElementById('memory');
+            const diskSlider = document.getElementById('disk');
+            const cpuSlider = document.getElementById('cpu');
+            
+            memorySlider.oninput = function() {
+                document.getElementById('memoryValue').textContent = this.value + ' MB';
+                updateConfirmInfo();
+            };
+            
+            diskSlider.oninput = function() {
+                document.getElementById('diskValue').textContent = this.value + ' MB';
+                updateConfirmInfo();
+            };
+            
+            cpuSlider.oninput = function() {
+                document.getElementById('cpuValue').textContent = this.value + '%';
+                updateConfirmInfo();
+            };
+        }
+
+        // تسجيل الدخول
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const pterodactylUrl = document.getElementById('pterodactylUrl').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            // التحقق من المستخدم
+            const user = vpsDatabase.users.find(u => 
+                u.username === username && u.password === password
+            );
+            
+            if (user || (username === 'admin' && password === 'admin123')) {
+                currentUser = user || {
+                    id: 1,
+                    username: 'admin',
+                    email: 'admin@example.com'
+                };
+                
+                // حفظ إعدادات Pterodactyl
+                vpsDatabase.settings = {
+                    pterodactylUrl: pterodactylUrl,
+                    apiKey: apiKey,
+                    lastLogin: new Date().toISOString()
+                };
+                saveDatabase();
+                
+                // الانتقال للوحة التحكم
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('userName').textContent = currentUser.username;
+                
+                // عرض السيرفرات
+                displayServers();
+            } else {
+                alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+            }
+        }
+
+        // تسجيل الخروج
+        function logout() {
+            currentUser = null;
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'block';
+        }
+
+        // تبديل القائمة الجانبية (للجوال)
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        // عرض صفحة معينة
+        function showPage(pageName) {
+            // إخفاء جميع الصفحات
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // إخفاء القائمة الجانبية على الجوال
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('active');
+            }
+            
+            // عرض الصفحة المطلوبة
+            document.getElementById(pageName + 'Page').classList.add('active');
+            document.getElementById('pageTitle').textContent = getPageTitle(pageName);
+            
+            // إذا كانت صفحة السيرفرات، قم بتحديث القائمة
+            if (pageName === 'servers') {
+                displayServers();
+            }
+            
+            // إعادة تعيين خطوات إنشاء السيرفر
+            if (pageName === 'createServer') {
+                resetCreateServer();
+            }
+        }
+
+        // الحصول على عنوان الصفحة
+        function getPageTitle(pageName) {
+            const titles = {
+                'home': 'الصفحة الرئيسية',
+                'createServer': 'إنشاء سيرفر جديد',
+                'servers': 'السيرفرات الخاصة بي',
+                'files': 'إدارة الملفات',
+                'users': 'إدارة المستخدمين',
+                'settings': 'الإعدادات',
+                'help': 'المساعدة'
+            };
+            return titles[pageName] || 'لوحة التحكم';
+        }
+
+        // عرض السيرفرات
+        function displayServers() {
+            const serversList = document.getElementById('serversList');
+            
+            if (vpsDatabase.servers.length === 0) {
+                serversList.innerHTML = `
+                    <div style="text-align: center; padding: 50px; color: #64748b;">
+                        <div style="font-size: 60px; margin-bottom: 20px;">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <h3>لا توجد سيرفرات</h3>
+                        <p>قم بإنشاء سيرفرك الأول</p>
+                        <button class="btn" onclick="showPage('createServer')" style="width: auto; padding: 10px 30px; margin-top: 20px;">
+                            إنشاء سيرفر
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            vpsDatabase.servers.forEach(server => {
+                const typeIcon = getServerTypeIcon(server.type);
+                const typeColor = getServerTypeColor(server.type);
+                
+                html += `
+                    <div class="server-card">
+                        <div class="server-header">
+                            <div>
+                                <h3 style="color: ${typeColor};">${server.name}</h3>
+                                <div style="display: flex; align-items: center; margin-top: 5px;">
+                                    <span class="server-status status-${server.status}"></span>
+                                    <span style="color: #64748b; font-size: 14px; margin-right: 5px;">
+                                        ${server.status === 'online' ? 'نشط' : 'متوقف'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="font-size: 30px; color: ${typeColor};">
+                                ${typeIcon}
+                            </div>
+                        </div>
+                        
+                        <div class="server-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">${server.memory}</div>
+                                <div class="stat-label">ذاكرة (MB)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${server.disk}</div>
+                                <div class="stat-label">تخزين (MB)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${server.cpu}%</div>
+                                <div class="stat-label">معالج</div>
+                            </div>
+                        </div>
+                        
+                        <div class="server-actions">
+                            <button class="action-btn btn-start" onclick="startServer(${server.id})">
+                                <i class="fas fa-play"></i> تشغيل
+                            </button>
+                            <button class="action-btn btn-stop" onclick="stopServer(${server.id})">
+                                <i class="fas fa-stop"></i> إيقاف
+                            </button>
+                            <button class="action-btn btn-manage" onclick="manageServer(${server.id})">
+                                <i class="fas fa-cog"></i> إدارة
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            serversList.innerHTML = html;
+        }
+
+        // الحصول على أيقونة نوع السيرفر
+        function getServerTypeIcon(type) {
+            const icons = {
+                'minecraft': '<i class="fas fa-cube"></i>',
+                'samp': '<i class="fas fa-car"></i>',
+                'discord': '<i class="fab fa-discord"></i>',
+                'fivem': '<i class="fas fa-gamepad"></i>'
+            };
+            return icons[type] || '<i class="fas fa-server"></i>';
+        }
+
+        // الحصول على لون نوع السيرفر
+        function getServerTypeColor(type) {
+            const colors = {
+                'minecraft': '#10b981',
+                'samp': '#8b5cf6',
+                'discord': '#7289da',
+                'fivem': '#f59e0b'
+            };
+            return colors[type] || '#2563eb';
+        }
+
+        // تشغيل سيرفر
+        function startServer(serverId) {
+            const server = vpsDatabase.servers.find(s => s.id === serverId);
+            if (server) {
+                server.status = 'online';
+                saveDatabase();
+                displayServers();
+                alert('تم تشغيل السيرفر بنجاح');
+            }
+        }
+
+        // إيقاف سيرفر
+        function stopServer(serverId) {
+            const server = vpsDatabase.servers.find(s => s.id === serverId);
+            if (server) {
+                server.status = 'offline';
+                saveDatabase();
+                displayServers();
+                alert('تم إيقاف السيرفر بنجاح');
+            }
+        }
+
+        // إدارة سيرفر
+        function manageServer(serverId) {
+            alert(`إدارة السيرفر ${serverId} - هذه الميزة قيد التطوير`);
+        }
+
+        // تحديث السيرفرات
+        function refreshServers() {
+            displayServers();
+            alert('تم تحديث قائمة السيرفرات');
+        }
+
+        // إنشاء سيرفر جديد
+        function createServer() {
+            const serverName = document.getElementById('serverName').value;
+            const description = document.getElementById('serverDescription').value;
+            const type = document.getElementById('selectedEgg').value;
+            const memory = parseInt(document.getElementById('memory').value);
+            const disk = parseInt(document.getElementById('disk').value);
+            const cpu = parseInt(document.getElementById('cpu').value);
+            
+            // إنشاء سيرفر جديد
+            const newServer = {
+                id: vpsDatabase.servers.length + 1,
+                name: serverName,
+                description: description,
+                type: type,
+                status: 'online',
+                memory: memory,
+                disk: disk,
+                cpu: cpu,
+                created: new Date().toISOString()
+            };
+            
+            vpsDatabase.servers.push(newServer);
+            saveDatabase();
+            
+            // عرض رسالة النجاح
+            document.getElementById('creationResult').style.display = 'block';
+            document.getElementById('createdServerName').textContent = serverName;
+            
+            // إخفاء الخطوات
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById('step' + i).style.display = 'none';
+            }
+        }
+
+        // اختيار نوع السيرفر
+        function selectEgg(eggType) {
+            // إزالة التحديد من جميع البطاقات
+            document.querySelectorAll('.egg-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // إضافة التحديد للبطاقة المختارة
+            event.currentTarget.classList.add('selected');
+            document.getElementById('selectedEgg').value = eggType;
+            updateConfirmInfo();
+        }
+
+        // الخطوة التالية
+        function nextStep() {
+            if (currentStep < 4) {
+                document.getElementById('step' + currentStep).classList.remove('active');
+                currentStep++;
+                document.getElementById('step' + currentStep).classList.add('active');
+                
+                // تحديث الخطوات
+                updateSteps();
+                updateConfirmInfo();
+            }
+        }
+
+        // الخطوة السابقة
+        function prevStep() {
+            if (currentStep > 1) {
+                document.getElementById('step' + currentStep).classList.remove('active');
+                currentStep--;
+                document.getElementById('step' + currentStep).classList.add('active');
+                
+                // تحديث الخطوات
+                updateSteps();
+            }
+        }
+
+        // تحديث الخطوات
+        function updateSteps() {
+            document.querySelectorAll('.step').forEach((step, index) => {
+                if (index + 1 <= currentStep) {
+                    step.classList.add('active');
+                } else {
+                    step.classList.remove('active');
+                }
+            });
+        }
+
+        // تحديث معلومات التأكيد
+        function updateConfirmInfo() {
+            document.getElementById('confirmName').textContent = 
+                document.getElementById('serverName').value;
+            
+            const eggType = document.getElementById('selectedEgg').value;
+            const typeNames = {
+                'minecraft': 'Minecraft',
+                'samp': 'SAMP',
+                'discord': 'Discord Bot',
+                'fivem': 'FiveM'
+            };
+            document.getElementById('confirmType').textContent = typeNames[eggType];
+            
+            document.getElementById('confirmMemory').textContent = 
+                document.getElementById('memory').value + ' MB';
+            document.getElementById('confirmDisk').textContent = 
+                document.getElementById('disk').value + ' MB';
+            document.getElementById('confirmCPU').textContent = 
+                document.getElementById('cpu').value + '%';
+        }
+
+        // إعادة تعيين صفحة إنشاء السيرفر
+        function resetCreateServer() {
+            currentStep = 1;
+            updateSteps();
+            
+            // إظهار الخطوة الأولى فقط
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById('step' + i);
+                if (i === 1) {
+                    step.classList.add('active');
+                    step.style.display = 'block';
+                } else {
+                    step.classList.remove('active');
+                    step.style.display = 'none';
+                }
+            }
+            
+            // إخفاء نتيجة الإنشاء
+            document.getElementById('creationResult').style.display = 'none';
+            
+            // إعادة تعيين التحديد
+            document.querySelectorAll('.egg-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector('.egg-card').classList.add('selected');
+            document.getElementById('selectedEgg').value = 'minecraft';
+            
+            // إعادة تعيين القيم
+            document.getElementById('serverName').value = 'سيرفر Minecraft الجديد';
+            document.getElementById('serverDescription').value = 'سيرفر ألعاب جديد';
+            document.getElementById('memory').value = 2048;
+            document.getElementById('disk').value = 10240;
+            document.getElementById('cpu').value = 50;
+            
+            // ت
